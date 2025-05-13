@@ -1,25 +1,17 @@
 const width = window.innerWidth;
 const height = window.innerHeight;
 
-// let scatterLeft = 0, scatterTop = 0;
-// let scatterMargin = {top: 10, right: 30, bottom: 30, left: 60},
-//     scatterWidth = 400 - scatterMargin.left - scatterMargin.right,
-//     scatterHeight = 350 - scatterMargin.top - scatterMargin.bottom;
-
-// let distrLeft = 400, distrTop = 0;
-// let distrMargin = {top: 10, right: 30, bottom: 30, left: 60},
-//     distrWidth = 400 - distrMargin.left - distrMargin.right,
-//     distrHeight = 350 - distrMargin.top - distrMargin.bottom;
-
-// let teamLeft = 0, teamTop = 400;
-// let teamMargin = {top: 10, right: 30, bottom: 30, left: 60},
-//     teamWidth = width - teamMargin.left - teamMargin.right,
-//     teamHeight = height-450 - teamMargin.top - teamMargin.bottom;
-
 let barchartLeft = 0, barChartTop = 0;
 let barChartMargin = {top: 10, right: 30, bottom: 30, left: 100},
-    barChartWidth = width - barChartMargin.left - barChartMargin.right,
+    barChartWidth = width / 4 - barChartMargin.left - barChartMargin.right,
     barChartHeight = height - 50;
+
+//
+
+let streamLeft = 0, streamTop = 500;
+let streamMargin = {top: 10, right: 30, bottom: 30, left: 100},
+    streamWidth = 1900 - streamMargin.left - streamMargin.right,
+    streamHeight = 600;
 
 // plots
 d3.csv("ds_salaries.csv").then(rawData =>{
@@ -51,11 +43,11 @@ d3.csv("ds_salaries.csv").then(rawData =>{
 
     // X label
     g1.append("text")
-    .attr("x", barChartWidth / 4 - 115)
+    .attr("x", barChartWidth)
     .attr("y", barChartHeight)
     .attr("font-size", "25px")
     .attr("text-anchor", "middle")
-    .text("Job Title (Min 15)");
+    .text("Job Title (Minimum 15)");
 
     // Y label
     g1.append("text")
@@ -93,11 +85,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     const yAxisCall = d3.axisLeft(y1)
                         .ticks(6);
     g1.append("g") 
-        .attr("class", "grid")
         .call(yAxisCall)
-        .selectAll("line")
-        .attr("stroke", "#e0e0e0")
-        .attr("stroke-dasharray", "2,2");
     
 
     // bars
@@ -109,159 +97,117 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     .attr("height", d => barChartHeight - 150 - y1(d.salary))
     .attr("fill", "steelblue");
 
-    /*
-    rawData.forEach(function(d){
-        d.AB = Number(d.AB);
-        d.H = Number(d.H);
-        d.salary = Number(d.salary);
-        d.SO = Number(d.SO);
+    // plot 2: some plot
+
+
+
+    // plot 3: stream graph
+    const salaryByYearExperience = d3.rollup(rawData,
+        v => d3.mean(v, d => d.salary),
+        d => d.work_year,
+        d => d.experience_level
+    );
+
+    // Convert the grouped data into an array suitable for the stream graph
+    const streamGraphData = Array.from(salaryByYearExperience, ([work_year, experienceLevels]) => {
+        const row = { work_year: work_year };
+        for (const [level, avgSalary] of experienceLevels) {
+            row[level] = avgSalary || 0;
+        }
+        return row;
     });
+    streamGraphData.sort((a, b) => d3.ascending(a.work_year, b.work_year));
 
+    const experienceLevels = Array.from(new Set(rawData.map(d => d.experience_level)));
+    const workYears = Array.from(new Set(rawData.map(d => d.work_year))).sort();
 
-    const filteredData = rawData.filter(d=>d.AB>abFilter);
-    const processedData = filteredData.map(d=>{
-                          return {
-                              "H_AB":d.H/d.AB,
-                              "SO_AB":d.SO/d.AB,
-                              "teamID":d.teamID,
-                          };
-    });
-    console.log("processedData", processedData);
-
-    //plot 1: Scatter Plot
-    const svg = d3.select("svg");
-
-    const g1 = svg.append("g")
-                .attr("width", scatterWidth + scatterMargin.left + scatterMargin.right)
-                .attr("height", scatterHeight + scatterMargin.top + scatterMargin.bottom)
-                .attr("transform", `translate(${scatterMargin.left}, ${scatterMargin.top})`);
-
-    // X label
-    g1.append("text")
-    .attr("x", scatterWidth / 2)
-    .attr("y", scatterHeight + 50)
-    .attr("font-size", "20px")
-    .attr("text-anchor", "middle")
-    .text("H/AB");
-
-
-    // Y label
-    g1.append("text")
-    .attr("x", -(scatterHeight / 2))
-    .attr("y", -40)
-    .attr("font-size", "20px")
-    .attr("text-anchor", "middle")
-    .attr("transform", "rotate(-90)")
-    .text("SO/AB");
-
-    // X ticks
-    const x1 = d3.scaleLinear()
-    .domain([0, d3.max(processedData, d => d.H_AB)])
-    .range([0, scatterWidth]);
-
-    const xAxisCall = d3.axisBottom(x1)
-                        .ticks(7);
-    g1.append("g")
-    .attr("transform", `translate(0, ${scatterHeight})`)
-    .call(xAxisCall)
-    .selectAll("text")
-        .attr("y", "10")
-        .attr("x", "-5")
-        .attr("text-anchor", "end")
-        .attr("transform", "rotate(-40)");
-
-    // Y ticks
-    const y1 = d3.scaleLinear()
-    .domain([0, d3.max(processedData, d => d.SO_AB)])
-    .range([scatterHeight, 0]);
-
-    const yAxisCall = d3.axisLeft(y1)
-                        .ticks(13);
-    g1.append("g").call(yAxisCall);
-
-    // circles
-    const circles = g1.selectAll("circle").data(processedData);
-
-    circles.enter().append("circle")
-         .attr("cx", d => x1(d.H_AB))
-         .attr("cy", d => y1(d.SO_AB))
-         .attr("r", 5)
-         .attr("fill", "#69b3a2");
-
-    const g2 = svg.append("g")
-                .attr("width", distrWidth + distrMargin.left + distrMargin.right)
-                .attr("height", distrHeight + distrMargin.top + distrMargin.bottom)
-                .attr("transform", `translate(${distrLeft}, ${distrTop})`);
-
-    //plot 2: Bar Chart for Team Player Count
-
-    const teamCounts = processedData.reduce((s, { teamID }) => (s[teamID] = (s[teamID] || 0) + 1, s), {});
-    const teamData = Object.keys(teamCounts).map((key) => ({ teamID: key, count: teamCounts[key] }));
-    console.log("teamData", teamData);
-
+    console.log("streamGraphData", streamGraphData);
+    console.log("experienceLevels", experienceLevels);
+    console.log("workYears", workYears);
 
     const g3 = svg.append("g")
-                .attr("width", teamWidth + teamMargin.left + teamMargin.right)
-                .attr("height", teamHeight + teamMargin.top + teamMargin.bottom)
-                .attr("transform", `translate(${teamMargin.left}, ${teamTop})`);
+        .attr("transform", `translate(${streamMargin.left}, ${streamMargin.top})`);
 
     // X label
     g3.append("text")
-    .attr("x", teamWidth / 2)
-    .attr("y", teamHeight + 50)
-    .attr("font-size", "20px")
-    .attr("text-anchor", "middle")
-    .text("Team");
-
+        .attr("x", streamWidth / 2)
+        .attr("y", streamHeight + streamMargin.bottom - 5) 
+        .attr("font-size", "16px")
+        .attr("text-anchor", "middle")
+        .text("Work Year");
 
     // Y label
     g3.append("text")
-    .attr("x", -(teamHeight / 2))
-    .attr("y", -40)
-    .attr("font-size", "20px")
-    .attr("text-anchor", "middle")
-    .attr("transform", "rotate(-90)")
-    .text("Number of players");
+        .attr("x", -(streamHeight / 2)) 
+        .attr("y", -streamMargin.left + 20) 
+        .attr("font-size", "16px")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .text("Average Salary (USD)");
 
-    // X ticks
-    const x2 = d3.scaleBand()
-    .domain(teamData.map(d => d.teamID))
-    .range([0, teamWidth])
-    .paddingInner(0.3)
-    .paddingOuter(0.2);
+    const stack = d3.stack()
+        .keys(experienceLevels)
+        .order(d3.stackOrderInsideOut)
+        .offset(d3.stackOffsetSilhouette);
 
-    const xAxisCall2 = d3.axisBottom(x2);
+    const stackedData = stack(streamGraphData);
+    console.log("stackedData", stackedData);
+
+    const x3 = d3.scaleBand()
+        .domain(workYears)
+        .range([0, streamWidth]) 
+        .padding(0.1);
+
+    const y3 = d3.scaleLinear()
+        .domain([
+            d3.min(stackedData, d => d3.min(d, v => v[0])), 
+            d3.max(stackedData, d => d3.max(d, v => v[1]))  
+        ])
+        .range([streamHeight, 0]);
+
+    const color = d3.scaleOrdinal()
+        .domain(experienceLevels)
+        .range(d3.schemeCategory10);
+
+    g3.selectAll(".layer")
+        .data(stackedData)
+        .enter().append("path")
+        .style("fill", function(d) { return color(d.key); })
+        .attr("d", d3.area()
+            .x(function(d) { return x3(d.data.work_year) + x3.bandwidth() / 2; })
+            .y0(function(d) { return y3(d[0]); })
+            .y1(function(d) { return y3(d[1]); })
+            .curve(d3.curveBasis) 
+        );
+
+    // X-axis for the stream graph
     g3.append("g")
-    .attr("transform", `translate(0, ${teamHeight})`)
-    .call(xAxisCall2)
-    .selectAll("text")
-        .attr("y", "10")
-        .attr("x", "-5")
-        .attr("text-anchor", "end")
-        .attr("transform", "rotate(-40)");
+        .attr("transform", `translate(0, ${streamHeight})`)
+        .call(d3.axisBottom(x3));
 
-    // Y ticks
-    const y2 = d3.scaleLinear()
-    .domain([0, d3.max(teamData, d => d.count)])
-    .range([teamHeight, 0])
-    .nice();
+    // Y-axis for the stream graph (optional for stream graphs, but can be helpful)
+    g3.append("g")
+        .call(d3.axisLeft(y3).ticks(5));
 
-    const yAxisCall2 = d3.axisLeft(y2)
-                        .ticks(6);
-    g3.append("g").call(yAxisCall2);
+    // Legend
+    const legend = g3.append("g")
+        .attr("transform", `translate(${streamWidth - 100}, 20)`);
 
-    // bars
-    const bars = g3.selectAll("rect").data(teamData);
+    legend.selectAll("rect")
+        .data(experienceLevels)
+        .enter().append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * 20)
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("fill", color);
 
-    bars.enter().append("rect")
-    .attr("y", d => y2(d.count))
-    .attr("x", d => x2(d.teamID))
-    .attr("width", x2.bandwidth())
-    .attr("height", d => teamHeight - y2(d.count))
-    .attr("fill", "steelblue");
+    legend.selectAll("text")
+        .data(experienceLevels)
+        .enter().append("text")
+        .attr("x", 20)
+        .attr("y", (d, i) => i * 20 + 12)
+        .text(d => d)
+        .style("font-size", "12px");
 
-
-    }).catch(function(error){
-    console.log(error);
-    */
 });

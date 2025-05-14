@@ -45,6 +45,14 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     const g1 = svg.append("g")
                 .attr("transform", `translate(${barChartMargin.left}, ${barChartMargin.top})`);
 
+    // title
+    g1.append("text")
+    .attr("x", barChartWidth / 2)
+    .attr("y", barChartTop + 20)
+    .attr("font-size", "30px")
+    .attr("text-anchor", "middle")
+    .text("Bar Chart of Average Salary by Job Title");
+
     // X label
     g1.append("text")
     .attr("x", barChartWidth / 2)
@@ -110,6 +118,14 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     const g2 = svg.append("g")
         .attr("transform", `translate(${donutLeft + donutMargin.left}, ${donutTop + donutMargin.top})`);
 
+    // title
+    g2.append("text")
+    .attr("x", donutWidth / 2)
+    .attr("y", height / 2 + 20)
+    .attr("font-size", "30px")
+    .attr("text-anchor", "middle")
+    .text("Donut Chart of Company Size Employee Distribution");
+
     const colorpie = d3.scaleOrdinal()
         .domain(companysizeData.map(d => d.company_size))
         .range(d3.schemeCategory10);
@@ -134,7 +150,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
         .style("opacity", 0.7);
 
     const legendpie = g2.append("g")
-        .attr("transform", `translate(${donutWidth - 100}, ${donutHeight / 1.5})`);
+        .attr("transform", `translate(${donutWidth / 1.3}, ${donutHeight / 1.5})`);
 
     legendpie.selectAll("rect")
         .data(companysizeData)
@@ -180,6 +196,14 @@ d3.csv("ds_salaries.csv").then(rawData =>{
 
     const g3 = svg.append("g")
         .attr("transform", `translate(${streamLeft + streamMargin.left}, ${streamTop + streamMargin.top})`);
+
+    // title
+    g3.append("text")
+        .attr("x", streamWidth / 2)
+        .attr("y", streamTop + 20) 
+        .attr("font-size", "30px")
+        .attr("text-anchor", "middle")
+        .text("Stream Graph of Average Salary");    
 
     // X label
     g3.append("text")

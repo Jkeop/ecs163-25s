@@ -27,7 +27,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     rawData.forEach(function(d){
         d.salary = Number(d.salary_in_usd);
     });
-
+    // create a map of job titles with their counts
     const job_titlesCount = d3.rollup(rawData, v => v.length, d => d.job_title);
     const min_count = 15;
     const filteredJobTitles_map = new Map(
@@ -35,7 +35,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     );
     const filteredjobtitles = Array.from(filteredJobTitles_map.keys());
     const filteredData = rawData.filter(d => filteredjobtitles.includes(d.job_title));
-
+    // create a new array with average salary by job title
     const averageSalary = d3.rollup(filteredData, v => d3.mean(v, d => d.salary), d => d.job_title);
     const processedData = Array.from(averageSalary, ([job_title, salary]) => ({ job_title, salary }));
     processedData.sort((a, b) => d3.ascending(a.job_title, b.job_title));
@@ -126,10 +126,11 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     .attr("text-anchor", "middle")
     .text("Donut Chart of Company Size Employee Distribution");
 
+    // for the colors
     const colorpie = d3.scaleOrdinal()
         .domain(companysizeData.map(d => d.company_size))
         .range(d3.schemeCategory10);
-    
+    // needed for pie chart
     const pie = d3.pie()
         .value(d => d.count);
     const data_ready = pie(companysizeData);
@@ -177,7 +178,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
         d => d.experience_level
     );
 
-    // Convert the grouped data into an array suitable for the stream graph
+    // Convert the grouped data into an array for the stream graph
     const streamGraphData = Array.from(salaryByYearExperience, ([work_year, experienceLevels]) => {
         const row = { work_year: work_year };
         for (const [level, avgSalary] of experienceLevels) {
@@ -221,7 +222,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .text("Average Salary (USD)");
-
+    // create stack for stream graph
     const stack = d3.stack()
         .keys(experienceLevels)
         .order(d3.stackOrderInsideOut)
@@ -230,18 +231,19 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     const stackedData = stack(streamGraphData);
     console.log("stackedData", stackedData);
 
+    // x axis for the stream graph
     const x3 = d3.scaleBand()
         .domain(workYears)
         .range([0, streamWidth]) 
         .padding(0.1);
-
+    // y axis for the stream graph
     const y3 = d3.scaleLinear()
         .domain([
             d3.min(stackedData, d => d3.min(d, v => v[0])), 
             d3.max(stackedData, d => d3.max(d, v => v[1]))  
         ])
         .range([streamHeight, streamHeight / 8]);
-
+    // color scale for the stream graph
     const color = d3.scaleOrdinal()
         .domain(experienceLevels)
         .range(d3.schemeCategory10);
@@ -257,12 +259,12 @@ d3.csv("ds_salaries.csv").then(rawData =>{
             .curve(d3.curveBasis) 
         );
 
-    // X-axis for the stream graph
+    // x-axis
     g3.append("g")
         .attr("transform", `translate(0, ${streamHeight})`)
         .call(d3.axisBottom(x3));
 
-    // Y-axis for the stream graph (optional for stream graphs, but can be helpful)
+    // y-axis
     g3.append("g")
         .call(d3.axisLeft(y3).ticks(5));
 

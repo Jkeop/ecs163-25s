@@ -2,18 +2,25 @@ const width = window.innerWidth;
 const height = window.innerHeight;
 
 let barchartLeft = 0, barChartTop = 0;
-let barChartMargin = {top: 10, right: 30, bottom: 30, left: 100},
-    barChartWidth = width / 4 - barChartMargin.left - barChartMargin.right,
-    barChartHeight = height - 50;
+let barChartMargin = {top: 10, right: 30, bottom: 150, left: 100},
+    barChartWidth = width / 2 - barChartMargin.left - barChartMargin.right,
+    barChartHeight = height - 20 - barChartMargin.top - barChartMargin.bottom;
 
-//
+let donutLeft = width / 2, donutTop = 0;
+let donutMargin = {top: 10, right: 30, bottom: 30, left: 50},
+    donutWidth = width / 2 - donutMargin.left - donutMargin.right,
+    donutHeight = height - donutMargin.top - donutMargin.bottom;
 
-let streamLeft = 0, streamTop = 500;
-let streamMargin = {top: 10, right: 30, bottom: 30, left: 100},
-    streamWidth = 1900 - streamMargin.left - streamMargin.right,
-    streamHeight = 600;
+let streamLeft = width / 2, streamTop = 0;
+let streamMargin = {top: 10, right: 30, bottom: 30, left: 50},
+    streamWidth = width / 2 - streamMargin.left - streamMargin.right,
+    streamHeight = height / 2 - streamMargin.top - streamMargin.bottom;
 
 // plots
+const svg = d3.select("svg")
+    .attr("width", width)
+    .attr("height", height)
+
 d3.csv("ds_salaries.csv").then(rawData =>{
     console.log("rawData", rawData);
     
@@ -35,24 +42,21 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     console.log("processedData", processedData);
 
     //plot 1: bar chart
-    const svg = d3.select("svg");
     const g1 = svg.append("g")
-                .attr("width", barChartWidth + barChartMargin.left + barChartMargin.right)
-                .attr("height", barChartHeight + barChartMargin.top + barChartMargin.bottom)
                 .attr("transform", `translate(${barChartMargin.left}, ${barChartMargin.top})`);
 
     // X label
     g1.append("text")
-    .attr("x", barChartWidth)
-    .attr("y", barChartHeight)
+    .attr("x", barChartWidth / 2)
+    .attr("y", barChartHeight + barChartMargin.bottom - 20)
     .attr("font-size", "25px")
     .attr("text-anchor", "middle")
     .text("Job Title (Minimum 15)");
 
     // Y label
     g1.append("text")
-    .attr("x", -(barChartHeight - 550))
-    .attr("y", -60)
+    .attr("x", -(barChartHeight / 2))
+    .attr("y", -barChartMargin.left + 20)
     .attr("font-size", "25px")
     .attr("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
@@ -61,13 +65,13 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     // X ticks
     const x1 = d3.scaleBand()
     .domain(processedData.map(d => d.job_title))
-    .range([0, barChartHeight - 180])
+    .range([0, barChartWidth])
     .paddingInner(0.3)
     .paddingOuter(0.2);
 
     const xAxisCall = d3.axisBottom(x1);
     g1.append("g")
-    .attr("transform", `translate(0, ${barChartHeight - 150})`)
+    .attr("transform", `translate(0, ${barChartHeight})`)
     .call(xAxisCall)
     .selectAll("text")
         .attr("y", "10")
@@ -78,8 +82,8 @@ d3.csv("ds_salaries.csv").then(rawData =>{
 
     // Y ticks
     const y1 = d3.scaleLinear()
-    .domain([0, d3.max(processedData, d => d.salary)])
-    .range([barChartHeight - 150, 200])
+    .domain([0, d3.max(processedData, d => d.salary) * 1.05])
+    .range([barChartHeight, 0])
     .nice();
 
     const yAxisCall = d3.axisLeft(y1)
@@ -94,11 +98,60 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     .attr("y", d => y1(d.salary))
     .attr("x", d => x1(d.job_title))
     .attr("width", x1.bandwidth())
-    .attr("height", d => barChartHeight - 150 - y1(d.salary))
+    .attr("height", d => barChartHeight - y1(d.salary))
     .attr("fill", "steelblue");
 
-    // plot 2: some plot
+    // plot 2: donut chart
+    const companysizeCount = d3.rollup(rawData, v => v.length, d => d.company_size);
+    const companysizeData = Array.from(companysizeCount, ([company_size, count]) => ({ company_size, count }));
+    companysizeData.sort((a, b) => d3.descending(a.company_size, b.company_size));
+    console.log("companysizeData", companysizeData);
 
+    const g2 = svg.append("g")
+        .attr("transform", `translate(${donutLeft + donutMargin.left}, ${donutTop + donutMargin.top})`);
+
+    const colorpie = d3.scaleOrdinal()
+        .domain(companysizeData.map(d => d.company_size))
+        .range(d3.schemeCategory10);
+    
+    const pie = d3.pie()
+        .value(d => d.count);
+    const data_ready = pie(companysizeData);
+    console.log("data_ready", data_ready);
+
+    g2.selectAll("whatever")
+        .data(data_ready)
+        .enter()
+        .append("path")
+        .attr("d", d3.arc()
+            .innerRadius(80)         
+            .outerRadius(150) 
+        )
+        .attr("fill", d => colorpie(d.data.company_size))
+        .attr("transform", `translate(${donutWidth / 2}, ${donutHeight / 1.25})`)
+        .style("stroke", "white")
+        .style("stroke-width", "2px")
+        .style("opacity", 0.7);
+
+    const legendpie = g2.append("g")
+        .attr("transform", `translate(${donutWidth - 100}, ${donutHeight / 1.5})`);
+
+    legendpie.selectAll("rect")
+        .data(companysizeData)
+        .enter().append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * 20)
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("fill", d => colorpie(d.company_size));
+
+    legendpie.selectAll("text")
+        .data(companysizeData)
+        .enter().append("text")
+        .attr("x", 20)
+        .attr("y", (d, i) => i * 20 + 12)
+        .text(d => d.company_size)
+        .style("font-size", "12px");
 
 
     // plot 3: stream graph
@@ -126,7 +179,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     console.log("workYears", workYears);
 
     const g3 = svg.append("g")
-        .attr("transform", `translate(${streamMargin.left}, ${streamMargin.top})`);
+        .attr("transform", `translate(${streamLeft + streamMargin.left}, ${streamTop + streamMargin.top})`);
 
     // X label
     g3.append("text")
@@ -139,7 +192,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     // Y label
     g3.append("text")
         .attr("x", -(streamHeight / 2)) 
-        .attr("y", -streamMargin.left + 20) 
+        .attr("y", -streamMargin.left - 10) 
         .attr("font-size", "16px")
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
@@ -163,7 +216,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
             d3.min(stackedData, d => d3.min(d, v => v[0])), 
             d3.max(stackedData, d => d3.max(d, v => v[1]))  
         ])
-        .range([streamHeight, 0]);
+        .range([streamHeight, streamHeight / 8]);
 
     const color = d3.scaleOrdinal()
         .domain(experienceLevels)
@@ -191,7 +244,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
 
     // Legend
     const legend = g3.append("g")
-        .attr("transform", `translate(${streamWidth - 100}, 20)`);
+        .attr("transform", `translate(${streamWidth - 50}, 20)`);
 
     legend.selectAll("rect")
         .data(experienceLevels)

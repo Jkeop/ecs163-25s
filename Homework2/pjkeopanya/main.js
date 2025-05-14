@@ -152,6 +152,13 @@ d3.csv("ds_salaries.csv").then(rawData =>{
 
     const legendpie = g2.append("g")
         .attr("transform", `translate(${donutWidth / 1.3}, ${donutHeight / 1.5})`);
+    
+    g2.append("text")
+        .attr("x", donutWidth / 1.3)
+        .attr("y", donutHeight / 1.5 - 10)
+        .attr("font-size", "13px")
+        .attr("text-anchor", "middle")
+        .text("Company Size");
 
     legendpie.selectAll("rect")
         .data(companysizeData)
@@ -271,6 +278,13 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     // Legend
     const legend = g3.append("g")
         .attr("transform", `translate(${streamWidth - 50}, 20)`);
+
+    g3.append("text")
+        .attr("x", streamWidth - 50)
+        .attr("y", 10)
+        .attr("font-size", "13px")
+        .attr("text-anchor", "middle")
+        .text("Experience Level"); 
 
     legend.selectAll("rect")
         .data(experienceLevels)

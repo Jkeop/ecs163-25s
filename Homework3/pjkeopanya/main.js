@@ -105,8 +105,6 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     const yAxisCall = d3.axisLeft(y1)
                         .ticks(6);
     
-    
-
     // bars
     const bars = g1.selectAll("rect").data(processedData);
     bars.enter().append("rect")
@@ -119,7 +117,7 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     g1.append("g") 
         .call(yAxisCall)
     // add zoom functionality
-    g1.call(d3.zoom()
+    const zoom = d3.zoom()
     .scaleExtent([1, 5])
     .translateExtent([[0, 0], [width, height]])
     .on("zoom", (event) => {
@@ -128,8 +126,10 @@ d3.csv("ds_salaries.csv").then(rawData =>{
             .attr("x", d => x1(d.job_title))
             .attr("width", x1.bandwidth());
         g1.select("g.x-axis").call(xAxisCall.scale(x1));
-    })
-    );
+    });
+
+    g1.call(zoom);
+
     // function to update the bar chart based on the selected data
     function updateBarChart(data) {
         x1.domain(data.map(d => d.job_title));
@@ -162,6 +162,11 @@ d3.csv("ds_salaries.csv").then(rawData =>{
     });
     d3.select("#sort-desc").on("click", () => {
         updateBarChart(salaryDescending);
+    });
+    d3.select("#reset-zoom").on("click", () => {
+        g1.transition()
+            .duration(750)
+            .call(zoom.transform, d3.zoomIdentity);
     });
 
     // plot 2: donut chart
